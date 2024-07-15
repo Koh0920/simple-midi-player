@@ -1,0 +1,84 @@
+.piano {
+  display: flex;
+  justify-content: center;
+  background-color: #333;
+  padding: 20px;
+  border-radius: 10px;
+  margin: 20px auto;
+  max-width: 1000px;
+}
+
+.piano-key {
+  width: 60px;
+  height: 200px;
+  margin: 0 2px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.1s;
+}
+
+.piano-key.white {
+  background-color: white;
+  color: black;
+}
+
+.piano-key.black {
+  background-color: #545454;
+  color: white;
+  height: 120px;
+  width: 45px;
+  position: relative;
+  z-index: 1;
+  margin-left: -20px;
+  margin-right: -20px;
+}
+
+.piano-key:active {
+  background-color: #999999;
+}
+
+.piano-key.black:active {
+  background-color: #333;
+}
+
+@media (max-width: 1024px) {
+  .piano-key {
+    width: 50px;
+    height: 180px;
+  }
+
+  .piano-key.black {
+    height: 100px;
+    width: 35px;
+    margin-left: -19px;
+    margin-right: -19px;
+  }
+}
+
+@media (max-width: 768px) {
+  .piano-key {
+    width: 40px;
+    height: 160px;
+  }
+
+  .piano-key.black {
+    height: 90px;
+    width: 30px;
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .piano-key {
+    width: 30px;
+    height: 140px;
+  }
+
+  .piano-key.black {
+    height: 80px;
+    width: 25px;
+    margin-left: -13px;
+    margin-right: -13px;
+  }
+}

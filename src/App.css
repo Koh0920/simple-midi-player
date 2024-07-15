@@ -16,21 +16,3 @@ button {
   margin: 5px;
   padding: 10px 20px;
 }
-
-.piano {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.piano button {
-  width: 40px;
-  height: 120px;
-  margin: 0 2px;
-  background-color: white;
-  border: 1px solid black;
-}
-
-.piano button:active {
-  background-color: #e0e0e0;
-}

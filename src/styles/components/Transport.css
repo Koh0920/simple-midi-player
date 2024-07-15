@@ -1,0 +1,53 @@
+.transport {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #2c3e50;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.transport button {
+  background-color: #3498db;
+  border: none;
+  color: white;
+  padding: 10px 15px;
+  margin: 0 5px;
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.3s ease;
+}
+
+.transport button:hover {
+  background-color: #2980b9;
+}
+
+.transport button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.transport .time-display {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 18px;
+  color: #ecf0f1;
+  margin: 0 15px;
+  min-width: 100px;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .transport {
+    flex-direction: column;
+  }
+
+  .transport button {
+    margin: 5px 0;
+  }
+
+  .transport .time-display {
+    margin: 10px 0;
+  }
+}

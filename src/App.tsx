@@ -1,166 +1,100 @@
-import { useState, useEffect, useRef } from "react";
-import MidiParser from "midi-parser-js";
+import React, { useState, useCallback } from "react";
+import { AudioEngine } from "./components/AudioEngine/AudioEngine";
+import { MIDIPlayer } from "./components/MIDIPlayer/MIDIPlayer";
+import { Piano } from "./components/Instruments/Piano";
+import { Transport } from "./components/Transport/Transport";
+import { FileUploader } from "./components/FileUploader/FileUploader";
+import { useAudioContext } from "./components/AudioEngine/useAudioContext";
+import { useNotePlayer } from "./hooks/useNotePlayer";
+import { useScheduler } from "./hooks/useScheduler";
+// import { createAudioContext } from "./utils/audioUtils";
 import "./App.css";
 
-function App() {
+const App: React.FC = () => {
+  const [midiFile, setMidiFile] = useState<ArrayBuffer | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentNote, setCurrentNote] = useState(null);
-  const [midiData, setMidiData] = useState(null);
-  const [audioContextStarted, setAudioContextStarted] = useState(false);
-  const audioContextRef = useRef(null);
-  const oscillatorRef = useRef(null);
-  const playbackIntervalRef = useRef(null);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
-  useEffect(() => {
-    return () => {
-      if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-      }
-      if (playbackIntervalRef.current) {
-        clearInterval(playbackIntervalRef.current);
+  const { audioContext, initAudioContext, ensureAudioContext } =
+    useAudioContext();
+  const { playNote } = useNotePlayer(audioContext);
+  const { startScheduler, stopScheduler } = useScheduler(
+    audioContext,
+    playNote
+  );
+
+  const handleFileUpload = useCallback((file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target && e.target.result instanceof ArrayBuffer) {
+        setMidiFile(e.target.result);
       }
     };
+    reader.readAsArrayBuffer(file);
   }, []);
 
-  const initAudioContext = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext ||
-        window.webkitAudioContext)();
-    }
-    if (audioContextRef.current.state === "suspended") {
-      audioContextRef.current.resume();
-    }
-    setAudioContextStarted(true);
-  };
-
-  const playNote = (frequency) => {
-    if (!audioContextStarted) {
+  const handleTogglePlayback = useCallback(() => {
+    if (!audioContext) {
       initAudioContext();
-    }
-
-    if (oscillatorRef.current) {
-      oscillatorRef.current.stop();
-    }
-
-    const oscillator = audioContextRef.current.createOscillator();
-    const gainNode = audioContextRef.current.createGain();
-
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(
-      frequency,
-      audioContextRef.current.currentTime
-    );
-
-    oscillator.connect(gainNode);
-    gainNode.connect(audioContextRef.current.destination);
-
-    oscillator.start();
-    gainNode.gain.setValueAtTime(0.5, audioContextRef.current.currentTime);
-
-    oscillatorRef.current = oscillator;
-    setCurrentNote(frequency);
-  };
-
-  const stopNote = () => {
-    if (oscillatorRef.current) {
-      oscillatorRef.current.stop();
-      oscillatorRef.current = null;
-      setCurrentNote(null);
-    }
-  };
-
-  const togglePlayback = () => {
-    if (!audioContextStarted) {
-      initAudioContext();
-    }
-    if (isPlaying) {
-      stopPlayback();
-    } else {
-      startPlayback();
     }
     setIsPlaying(!isPlaying);
-  };
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const midiFile = new Uint8Array(e.target.result);
-        const midiObject = MidiParser.parse(midiFile);
-        setMidiData(midiObject);
-      };
-      reader.readAsArrayBuffer(file);
+    if (!isPlaying) {
+      startScheduler([]); // You would pass actual MIDI events here
+    } else {
+      stopScheduler();
     }
-  };
+  }, [
+    isPlaying,
+    audioContext,
+    initAudioContext,
+    startScheduler,
+    stopScheduler,
+  ]);
 
-  const startPlayback = () => {
-    if (!midiData) return;
-
-    let noteIndex = 0;
-    const track = midiData.track[0].event;
-
-    playbackIntervalRef.current = setInterval(() => {
-      if (noteIndex >= track.length) {
-        stopPlayback();
-        return;
-      }
-
-      const event = track[noteIndex];
-      if (event.type === 9) {
-        // Note on event
-        const frequency = midiNoteToFrequency(event.data[0]);
-        playNote(frequency);
-      } else if (event.type === 8) {
-        // Note off event
-        stopNote();
-      }
-
-      noteIndex++;
-    }, 100); // Adjust this value to change playback speed
-  };
-
-  const stopPlayback = () => {
-    if (playbackIntervalRef.current) {
-      clearInterval(playbackIntervalRef.current);
-      playbackIntervalRef.current = null;
-    }
-    stopNote();
+  const handleStop = useCallback(() => {
     setIsPlaying(false);
-  };
+    stopScheduler();
+    setCurrentTime(0);
+  }, [stopScheduler]);
 
-  const midiNoteToFrequency = (note) => {
-    return 440 * Math.pow(2, (note - 69) / 12);
-  };
+  const handleRewind = useCallback(() => {
+    setCurrentTime(Math.max(0, currentTime - 5));
+  }, [currentTime]);
+
+  const handleForward = useCallback(() => {
+    setCurrentTime(Math.min(duration, currentTime + 5));
+  }, [currentTime, duration]);
 
   return (
     <div className="App">
-      <h1>React + Vite Simple DAW with MIDI</h1>
-      <input type="file" accept=".mid,.midi" onChange={handleFileUpload} />
-      <button onClick={togglePlayback} disabled={!midiData}>
-        {isPlaying ? "Stop" : "Play MIDI"}
-      </button>
-      <div>
-        <p>
-          Current Note: {currentNote ? `${currentNote.toFixed(2)} Hz` : "None"}
-        </p>
-      </div>
-      <div className="piano">
-        {[261.63, 293.66, 329.63, 349.23, 392.0, 440.0, 493.88].map(
-          (freq, index) => (
-            <button
-              key={index}
-              onMouseDown={() => playNote(freq)}
-              onMouseUp={stopNote}
-              onMouseLeave={stopNote}
-            >
-              {["C", "D", "E", "F", "G", "A", "B"][index]}
-            </button>
-          )
-        )}
-      </div>
+      <h1>React Vite DAW</h1>
+      <AudioEngine>
+        <FileUploader onFileUpload={handleFileUpload} />
+        <Transport
+          isPlaying={isPlaying}
+          onTogglePlayback={handleTogglePlayback}
+          onStop={handleStop}
+          onRewind={handleRewind}
+          onForward={handleForward}
+          currentTime={currentTime}
+          duration={duration}
+          disabled={!midiFile}
+        />
+        <MIDIPlayer
+          audioContext={audioContext}
+          isPlaying={isPlaying}
+          midiData={midiFile}
+          onPlaybackComplete={() => setIsPlaying(false)}
+        />
+        <Piano
+          audioContext={audioContext}
+          playNote={playNote}
+          ensureAudioContext={ensureAudioContext}
+        />
+      </AudioEngine>
     </div>
   );
-}
+};
 
 export default App;

@@ -1,0 +1,36 @@
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+/* src/App.css */
+.App {
+  text-align: center;
+  padding: 20px;
+}
+
+button {
+  font-size: 16px;
+  margin: 5px;
+  padding: 10px 20px;
+}
+
+.piano {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.piano button {
+  width: 40px;
+  height: 120px;
+  margin: 0 2px;
+  background-color: white;
+  border: 1px solid black;
+}
+
+.piano button:active {
+  background-color: #e0e0e0;
+}
